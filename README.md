@@ -10,7 +10,7 @@ how to set up:
    * if the file did not generate the make a new folder in the server directory and rename it to config
 3) copy and paste you bot tiken into the line that says #botToken=
 4) copy the ID of the discord server and the channel that you want to link to this server
-  * to obtain ID's on discord enable developermode
+   * to obtain ID's on discord enable developermode
 5) restart your server and all should work
 
 not: no tutorial; for creating a discord bot is given here
