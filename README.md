@@ -19,5 +19,5 @@ note: no tutorial; for creating a discord bot is given here
 commands that can be used in dicord:  
 /list    list all player that are online
 
-commands that can be used in minecraft
+commands that can be used in minecraft  
 /dischat reload    reload the discord bot  requires op level 3
