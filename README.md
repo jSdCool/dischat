@@ -13,7 +13,7 @@ how to set up:
    * to obtain ID's on discord enable developermode
 5) restart your server and all should work
 
-note: no tutorial; for creating a discord bot is given here
+note: no tutorial for creating a discord bot is given here
 
 
 commands that can be used in dicord:  
