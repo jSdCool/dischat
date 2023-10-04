@@ -17,26 +17,23 @@ import static me.dischat.main.Main.chatChannel;
 @Mixin(PlayerManager.class)
 public class Mixin_ReadChat {
 
-    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Z)V",at =@At("HEAD"),remap = true )
+    @Inject(method = "broadcast(Lnet/minecraft/text/Text;Z)V",at =@At("HEAD"))
     private void broadcastChatMessage(Text text, boolean overlay, CallbackInfo ci){//detect when a system message is sent
-       //System.out.println("detected by mixin");
        if(Main.discordConnected) {
            if (text.getString().length() > 9 && text.getString().startsWith("Discord ["))
              return;
-            //System.out.println("sending");
            chatChannel.sendMessage(text.getString()).queue();
        }
     }
 
-    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V",at=@At("HEAD"),remap = true)
+    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/network/ServerPlayerEntity;Lnet/minecraft/network/message/MessageType$Parameters;)V",at=@At("HEAD"))
     private void broadcastChatMessage(SignedMessage message, ServerPlayerEntity sender, MessageType.Parameters params, CallbackInfo ci){//detetct when a player sends a message
         if(Main.discordConnected) {
-            String msg = message.getContent().getString();
             chatChannel.sendMessage("<" + sender.getName().getString() + "> " + message.getContent().getString()).queue();
         }
     }
 
-    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/command/ServerCommandSource;Lnet/minecraft/network/message/MessageType$Parameters;)V",at=@At("HEAD"),remap = true)
+    @Inject(method = "broadcast(Lnet/minecraft/network/message/SignedMessage;Lnet/minecraft/server/command/ServerCommandSource;Lnet/minecraft/network/message/MessageType$Parameters;)V",at=@At("HEAD"))
     private void broadcastChatMessage(SignedMessage message, ServerCommandSource source, MessageType.Parameters params, CallbackInfo ci){//detect when the /say command is used
         if(Main.discordConnected) {
             String msg = message.getContent().getString();
