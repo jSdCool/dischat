@@ -3,6 +3,8 @@ package me.dischat.main;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
+import net.dv8tion.jda.api.OnlineStatus;
+import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
@@ -99,7 +101,7 @@ public class Main implements ModInitializer {
                                             saveAuths();
                                             context.getSource().sendFeedback(()-> MutableText.of(new LiteralTextContent("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
                                         }else{
-                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to companion")));
+                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to discord")));
                                             return 0;
                                         }
 
@@ -120,6 +122,19 @@ public class Main implements ModInitializer {
 
                                         return 1;
                                     })))
+                    .then(literal("status").then(net.minecraft.server.command.CommandManager.argument("status",StringArgumentType.greedyString())
+                            .executes((context -> {
+                                if(discordConnected) {
+                                    botStatus= getString(context,"status");
+                                    jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.of(Activity.ActivityType.CUSTOM_STATUS,botStatus));
+                                    return 1;
+                                }else {
+                                    context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to discord")));
+                                    return 0;
+                                }
+
+                            }))
+                    ))
 
             );
         });
@@ -138,6 +153,7 @@ public class Main implements ModInitializer {
 
     static AuthedUsers discordAdmins;
     static final String authFileName="config/admins.auth";
+    static String botStatus="";
 
     @SuppressWarnings("all")
     void Initialize_discord_bot() throws LoginException, InterruptedException, InitializationFailedException {
@@ -151,7 +167,7 @@ public class Main implements ModInitializer {
         }catch(Throwable e){
             try {
                 FileWriter mr = new FileWriter("config/dischat.cfg");
-                mr.write("#botToken=\n#sendServerId=\n#sendChannelId=");
+                mr.write("#botToken=\n#sendServerId=\n#sendChannelId=\n#defaultStatus=Connected to Minecraft chat");
                 mr.close();
                 System.out.println("config file created.");
 
@@ -179,6 +195,9 @@ public class Main implements ModInitializer {
                 }
                 if(pt1.equals("sendChannelId")){
                     channelid=data;
+                }
+                if(pt1.equals("defaultStatus")){
+                    botStatus=data;
                 }
 
             }
@@ -229,6 +248,8 @@ public class Main implements ModInitializer {
         }else{
             LOGGER.warn("Discord bot does not have the GUILD_MEMBERS intent.\nthis intent is required authorizing users\nto change this setting go to https://discord.com/developers/applications");
         }
+
+        jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.of(Activity.ActivityType.CUSTOM_STATUS,botStatus));
         Message.suppressContentIntentWarning();//prevent a warning from being sent to std out about message intent
     }
 
