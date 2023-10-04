@@ -1,8 +1,10 @@
 package me.dischat.main;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -11,6 +13,8 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.text.LiteralTextContent;
+import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +24,7 @@ import java.io.*;
 import java.util.EnumSet;
 import java.util.Scanner;
 
+import static com.mojang.brigadier.arguments.StringArgumentType.getString;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class Main implements ModInitializer {
@@ -76,6 +81,45 @@ public class Main implements ModInitializer {
                         discordConnected=true;
                         return 1;
                     }))
+                    .then(literal("auth")
+                            .then(net.minecraft.server.command.CommandManager.argument("userID", StringArgumentType.greedyString())
+                                    .executes( (context) -> {
+                                        String id= getString(context,"userID");
+                                        if(discordConnected) {
+                                            if(discordAdmins.ids.contains(id)) {
+                                                context.getSource().sendError(MutableText.of(new LiteralTextContent("error: that user is already authed")));
+                                                return 0;
+                                            }
+                                            Member member = discordServer.getMemberById(id);
+                                            if(member == null){
+                                                context.getSource().sendError(MutableText.of(new LiteralTextContent("error: unable to find that user")));
+                                                return 0;
+                                            }
+                                            discordAdmins.ids.add(id);
+                                            saveAuths();
+                                            context.getSource().sendFeedback(()-> MutableText.of(new LiteralTextContent("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
+                                        }else{
+                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to companion")));
+                                            return 0;
+                                        }
+
+                                        return 1;
+                                    })))
+                    .then(literal("unAuth")
+                            .then(net.minecraft.server.command.CommandManager.argument("userID", StringArgumentType.greedyString())
+                                    .executes( (context) -> {
+                                        String id= getString(context,"userID");
+                                        if(discordAdmins.ids.contains(id)){
+                                            discordAdmins.ids.remove(id);
+                                            saveAuths();
+                                            context.getSource().sendFeedback(() -> Text.of("Successfully removed "+id+" from authed discord users"),true);
+                                        }else{
+                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("no user with that ID was authed")));
+                                            return 0;
+                                        }
+
+                                        return 1;
+                                    })))
 
             );
         });
@@ -89,6 +133,7 @@ public class Main implements ModInitializer {
     static MinecraftServer ms;
     static PlayerManager pm;
     public static TextChannel chatChannel;
+    static Guild discordServer;
     public static final String modVersion ="1.1.0";
 
     static AuthedUsers discordAdmins;
@@ -149,7 +194,7 @@ public class Main implements ModInitializer {
         }catch (ClassNotFoundException ignored) {}
 
          jda = JDABuilder.createDefault(botToken)
-                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
+                 .enableIntents(GatewayIntent.MESSAGE_CONTENT,GatewayIntent.GUILD_MEMBERS)
                 .addEventListeners(new ReadyListener())
                 .addEventListeners(new MessageReceived())
                 .build();
@@ -166,18 +211,24 @@ public class Main implements ModInitializer {
             discordConnected=false;
             throw new InitializationFailedException();
         }
+        boolean guidMemebrsIntent = intents.contains(GatewayIntent.GUILD_MEMBERS);
 
-        Guild g =jda.getGuildById(guildid);
-        if(g == null){
+        discordServer =jda.getGuildById(guildid);
+        if(discordServer == null){
             LOGGER.error("Invalid Discord server information. Check the config file");
             throw new InitializationFailedException();
         }
-        chatChannel = g.getTextChannelById(channelid);
+        chatChannel = discordServer.getTextChannelById(channelid);
         if(chatChannel == null){
             LOGGER.error("Invalid Discord channel information. Check the config file");
             throw new InitializationFailedException();
         }
 
+        if(guidMemebrsIntent) {
+            discordServer.loadMembers();
+        }else{
+            LOGGER.warn("Discord bot does not have the GUILD_MEMBERS intent.\nthis intent is required authorizing users\nto change this setting go to https://discord.com/developers/applications");
+        }
         Message.suppressContentIntentWarning();//prevent a warning from being sent to std out about message intent
     }
 
@@ -188,6 +239,16 @@ public class Main implements ModInitializer {
         System.out.println("JDA shut down");
     }
 
-
+    public static void saveAuths() {
+        try {
+            FileOutputStream fileOut =new FileOutputStream(authFileName);
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(discordAdmins);
+            out.close();
+            fileOut.close();
+        }catch(IOException i) {
+            LOGGER.error("Exception while saving auth list",i);
+        }
+    }
     
 }
