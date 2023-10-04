@@ -7,10 +7,12 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.minecraft.MinecraftVersion;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
+import net.minecraft.util.math.Vec3d;
 
 import java.util.List;
 
@@ -22,7 +24,7 @@ public class MessageReceived extends ListenerAdapter {
         Guild guild = event.getGuild();
         User author = msg.getAuthor();
         String content = msg.getContentRaw();
-        //String contentSections[] = content.split(" ");
+        String contentSections[] = content.split(" ");
         //System.out.println(author + " " + content);
         if(!channel.getId().equals(Main.channelid)){
             return;
@@ -34,16 +36,104 @@ public class MessageReceived extends ListenerAdapter {
         //discord commands
         if(content.equals("/list")){
             List<ServerPlayerEntity> players = Main.pm.getPlayerList();
-            if(players.size()==0){
+            if(players.isEmpty()){
                 channel.sendMessage("there are no players online").queue();
                 return;
             }
-            String playersOut="";
-            for(int i=0;i<players.size();i++){
-                playersOut+=players.get(i).getName().getString()+" \n";
+            StringBuilder playersOut= new StringBuilder();
+            for (ServerPlayerEntity player : players) {
+                playersOut.append(player.getName().getString()).append(" \n");
             }
-            channel.sendMessage(playersOut).queue();
+            channel.sendMessage(playersOut.toString()).queue();
             return;
+        }
+        if(content.equals("/version")){
+            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.CURRENT.getName()).queue();
+            return;
+        }
+
+        if(contentSections[0].equals("/tp")){
+            if(Main.discordAdmins.ids.contains(author.getId())) {
+                if (contentSections.length < 5) {
+                    channel.sendMessage("missing parameters").queue();
+                    return;
+                }
+                double x = 0, y = 0, z = 0;
+                try {
+                    x = Double.parseDouble(contentSections[2]);
+                    y = Double.parseDouble(contentSections[3]);
+                    z = Double.parseDouble(contentSections[4]);
+                } catch (NumberFormatException n) {
+                    channel.sendMessage("value entered was not a number").queue();
+                    return;
+                }
+                //teleport the player
+                if(Main.pm.getPlayerNames().length >0 && hasPlayer(contentSections[1])) {
+                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+
+                    player.teleport(player.getServerWorld(),x, y, z,player.getYaw(),player.getPitch());
+                    channel.sendMessage("teleported player").queue();
+                }else{
+                    channel.sendMessage("player not found").queue();
+                }
+
+            }else{
+                channel.sendMessage("you are not authorized to use this command").queue();
+            }
+            return;
+        }
+
+        if(contentSections[0].equals("/pos")) {
+            if(Main.discordAdmins.ids.contains(author.getId())){
+                if(contentSections.length<2) {
+                    channel.sendMessage("missing parameters").queue();
+                    return;
+                }
+
+                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+                    Vec3d cords = player.getPos();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z).queue();
+                }else{
+                    channel.sendMessage("player not found").queue();
+                }
+
+                return;
+            }else {
+                channel.sendMessage("you are not authorized to use this command").queue();
+                return;
+            }
+        }
+
+        if(contentSections[0].equals("/kickMC")) {
+            if(Main.discordAdmins.ids.contains(author.getId())){
+                if(contentSections.length<2) {
+                    channel.sendMessage("missing parameters").queue();
+                    return;
+                }
+                StringBuilder reason= new StringBuilder();
+                for(int j=2;j<contentSections.length;j++) {
+                    reason.append(contentSections[j]).append(" ");
+                }
+
+                String finalReason = reason.toString();
+
+                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+                    if(finalReason.isEmpty())
+                        finalReason="kicked by an operator from discord";
+                    player.networkHandler.disconnect(MutableText.of(new LiteralTextContent((finalReason))));
+                    channel.sendMessage("kicked "+contentSections[1]+": "+finalReason).queue();
+                    System.out.println("kicked "+contentSections[1]+": "+finalReason);
+                }else{
+                    channel.sendMessage("player not found").queue();
+                }
+
+                return;
+            }else {
+                channel.sendMessage("you are not authorized to use this command").queue();
+                return;
+            }
         }
 
 
@@ -78,5 +168,15 @@ public class MessageReceived extends ListenerAdapter {
         //send the message
         Main.pm.broadcast(chatMessage, false);
 
+    }
+
+    boolean hasPlayer(String name){
+        List<ServerPlayerEntity> players = Main.pm.getPlayerList();
+        for(int i=0;i<players.size();i++){
+            if(players.get(i).getName().getString().equals(name)){
+                return true;
+            }
+        }
+        return false;
     }
 }

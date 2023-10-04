@@ -16,9 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.LoginException;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.EnumSet;
 import java.util.Scanner;
 
@@ -85,23 +83,27 @@ public class Main implements ModInitializer {
 
     }
 
-public static  Boolean discordConnected=true;
-public static JDA jda;
-static String botToken="",channelid="";
+    public static  Boolean discordConnected=true;
+    public static JDA jda;
+    static String botToken="",channelid="";
     static MinecraftServer ms;
     static PlayerManager pm;
     public static TextChannel chatChannel;
+    public static final String modVersion ="1.1.0";
+
+    static AuthedUsers discordAdmins;
+    static final String authFileName="config/admins.auth";
 
     void Initialize_discord_bot() throws LoginException, InterruptedException, InitializationFailedException {
         // Note: It is important to register your ReadyListener before building
         File config;
         Scanner cfs;
         try {
-            config = new File("config\\dischat.cgf");
+            config = new File("config/dischat.cfg");
             cfs = new Scanner(config);
         }catch(Throwable e){
             try {
-                FileWriter mr = new FileWriter("config\\dischat.cgf");
+                FileWriter mr = new FileWriter("config/dischat.cfg");
                 mr.write("#botToken=\n#sendServerId=\n#sendChannelId=");
                 mr.close();
                 System.out.println("config file created.");
@@ -134,6 +136,15 @@ static String botToken="",channelid="";
 
             }
         }
+
+        try {
+            FileInputStream auths=new FileInputStream(authFileName);
+            ObjectInputStream in =new ObjectInputStream(auths);
+            discordAdmins=(AuthedUsers)in.readObject();
+            in.close();
+        }catch(IOException i) {
+            discordAdmins=new AuthedUsers();
+        }catch (ClassNotFoundException c) {}
 
          jda = JDABuilder.createDefault(botToken)
                  .enableIntents(GatewayIntent.MESSAGE_CONTENT)
