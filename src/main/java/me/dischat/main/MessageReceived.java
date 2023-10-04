@@ -13,6 +13,7 @@ import net.minecraft.text.HoverEvent;
 import net.minecraft.text.LiteralTextContent;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.GameMode;
 
 import java.util.List;
 
@@ -98,11 +99,10 @@ public class MessageReceived extends ListenerAdapter {
                     channel.sendMessage("player not found").queue();
                 }
 
-                return;
             }else {
                 channel.sendMessage("you are not authorized to use this command").queue();
-                return;
             }
+            return;
         }
 
         if(contentSections[0].equals("/kickMC")) {
@@ -129,11 +129,55 @@ public class MessageReceived extends ListenerAdapter {
                     channel.sendMessage("player not found").queue();
                 }
 
-                return;
             }else {
                 channel.sendMessage("you are not authorized to use this command").queue();
-                return;
             }
+            return;
+        }
+
+        if(contentSections[0].equals("/gamemode")) {
+            if(Main.discordAdmins.ids.contains(author.getId())){
+                if(contentSections.length<3) {
+                    channel.sendMessage("missing parameters").queue();
+                    return;
+                }
+
+                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+                    GameMode mode=GameMode.DEFAULT;
+                    switch(contentSections[2]){
+                        case "creative":
+                            mode=GameMode.CREATIVE;
+                            break;
+                        case "survival":
+                            mode=GameMode.SURVIVAL;
+                            break;
+                        case "adventure":
+                            mode=GameMode.ADVENTURE;
+                            break;
+                        case "spectator":
+                            mode=GameMode.SPECTATOR;
+                            break;
+                        default:
+                            channel.sendMessage("invalid gamemode").queue();
+
+                    }
+                    player.changeGameMode(mode);
+                    channel.sendMessage("gamemode updated").queue();
+                    player.sendMessage(MutableText.of(new LiteralTextContent("gamemode updated")),false);
+                }else{
+                    channel.sendMessage("player not found").queue();
+                }
+
+            }else {
+                channel.sendMessage("you are not authorized to use this command").queue();
+            }
+            return;
+        }
+
+        if(content.equals("/help")) {
+            channel.sendMessage("send messages in this channel to make them appear in Mincreaft\n===COMMANDS===\n/list    list online players\n/version    get the version of this mod and the game\n===MODERATOR COMMANDS===\n/tp <player> <x> <y> <z>    teleport a player to that position\n/pos <player>    get the position of a player\n/kickMC <player> [<reason>]    kick a player from the server\n/gamemode <player> <mode>    set the gamemode of a player").queue();
+            return;
         }
 
 
@@ -172,8 +216,8 @@ public class MessageReceived extends ListenerAdapter {
 
     boolean hasPlayer(String name){
         List<ServerPlayerEntity> players = Main.pm.getPlayerList();
-        for(int i=0;i<players.size();i++){
-            if(players.get(i).getName().getString().equals(name)){
+        for (ServerPlayerEntity player : players) {
+            if (player.getName().getString().equals(name)) {
                 return true;
             }
         }
