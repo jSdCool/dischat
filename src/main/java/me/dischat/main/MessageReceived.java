@@ -1,6 +1,5 @@
 package me.dischat.main;
 
-import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
@@ -18,14 +17,15 @@ import net.minecraft.world.GameMode;
 import java.util.List;
 
 public class MessageReceived extends ListenerAdapter {
+    @SuppressWarnings("all")
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
         Message msg = event.getMessage();
         TextChannel channel = event.getChannel().asTextChannel();
-        Guild guild = event.getGuild();
+        //Guild guild = event.getGuild();
         User author = msg.getAuthor();
         String content = msg.getContentRaw();
-        String contentSections[] = content.split(" ");
+        String[] contentSections = content.split(" ");
         //System.out.println(author + " " + content);
         if(!channel.getId().equals(Main.channelid)){
             return;
@@ -59,7 +59,7 @@ public class MessageReceived extends ListenerAdapter {
                     channel.sendMessage("missing parameters").queue();
                     return;
                 }
-                double x = 0, y = 0, z = 0;
+                double x , y, z ;
                 try {
                     x = Double.parseDouble(contentSections[2]);
                     y = Double.parseDouble(contentSections[3]);

@@ -58,12 +58,12 @@ public class Main implements ModInitializer {
                         try {
                             Initialize_discord_bot();
                         } catch (LoginException e) {
-                            e.printStackTrace();
+                            LOGGER.error("failed to log into discord bot",e);
                             context.getSource().sendError(Text.of("failed to log into discord bot \nreload failed!"));
                             discordConnected=false;
                             return 0;
                         } catch (InterruptedException e) {
-                            e.printStackTrace();
+                            LOGGER.error("failed to initialise discord bot",e);
                             context.getSource().sendError(Text.of("failed to initialise discord bot \nreload failed!"));
                             discordConnected=false;
                             return 0;
@@ -94,10 +94,12 @@ public class Main implements ModInitializer {
     static AuthedUsers discordAdmins;
     static final String authFileName="config/admins.auth";
 
+    @SuppressWarnings("all")
     void Initialize_discord_bot() throws LoginException, InterruptedException, InitializationFailedException {
         // Note: It is important to register your ReadyListener before building
         File config;
         Scanner cfs;
+        new File("config/").mkdirs();
         try {
             config = new File("config/dischat.cfg");
             cfs = new Scanner(config);
@@ -109,8 +111,8 @@ public class Main implements ModInitializer {
                 System.out.println("config file created.");
 
             } catch (IOException ee) {
-                System.out.println("\n\n\nAn error occurred while creating dischat config file. you may need to make the config folder if it does not already exist\n\n\n");
-                ee.printStackTrace();
+
+                LOGGER.error("An error occurred while load disChat config file",ee);
                 discordConnected=false;
                 return;
             }
@@ -144,7 +146,7 @@ public class Main implements ModInitializer {
             in.close();
         }catch(IOException i) {
             discordAdmins=new AuthedUsers();
-        }catch (ClassNotFoundException c) {}
+        }catch (ClassNotFoundException ignored) {}
 
          jda = JDABuilder.createDefault(botToken)
                  .enableIntents(GatewayIntent.MESSAGE_CONTENT)
