@@ -21,8 +21,8 @@ public class Mixin_ReadChat {
     private void broadcastChatMessage(Text text, boolean overlay, CallbackInfo ci){//detect when a system message is sent
        //System.out.println("detected by mixin");
        if(Main.discordConnected) {
-           if (text.getString().length() > 12 && text.getString().substring(0, 12).equals("§9Discord §r"))
-               return;
+           if (text.getString().length() > 9 && text.getString().startsWith("Discord ["))
+             return;
             //System.out.println("sending");
            chatChannel.sendMessage(text.getString()).queue();
        }
