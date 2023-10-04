@@ -15,6 +15,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.security.auth.login.LoginException;
 import java.io.File;
@@ -26,22 +28,23 @@ import java.util.Scanner;
 import static net.minecraft.server.command.CommandManager.literal;
 
 public class Main extends ListenerAdapter implements ModInitializer {
+    public static final Logger LOGGER = LoggerFactory.getLogger("dischat");
     @Override
     public void onInitialize(){
         // This code runs as soon as Minecraft is in a mod-load-ready state.
         // However, some things (like resources) may still be uninitialized.
         // Proceed with mild caution.
 
-        System.out.println("initializing dischat");
+        LOGGER.info("initializing disChat");
         try {
             Initialize_discord_bot();
         } catch (Throwable e) {
-            e.printStackTrace();
-            System.out.println("an error was encountered while trying to initialize JDA");
+            LOGGER.error("an error was encountered while trying to initialize JDA",e);
+            //e.printStackTrace();
+            //System.out.println("an error was encountered while trying to initialize JDA");
             discordConnected=false;
         }
 
-        //jda.getGuildById("508727552827719682").getTextChannelById("748557838380433538").sendMessage("test startup message").queue();
         ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
             ms=server;
             pm = ms.getPlayerManager();
@@ -69,6 +72,10 @@ public class Main extends ListenerAdapter implements ModInitializer {
                             context.getSource().sendError(Text.of("failed to initialise discord bot \nreload failed!"));
                             discordConnected=false;
                             return 0;
+                        } catch (InitializationFailedException e) {
+                            context.getSource().sendError(Text.of("failed to initialise discord bot \nreload failed!"));
+                            discordConnected=false;
+                            return 0;
                         }
                         context.getSource().sendFeedback(() -> Text.of("dischat reloaded!!"),true);
                         discordConnected=true;
@@ -88,7 +95,7 @@ static String botToken="",channelid="";
     static PlayerManager pm;
     public static TextChannel chatChannel;
 
-    void Initialize_discord_bot() throws LoginException, InterruptedException{
+    void Initialize_discord_bot() throws LoginException, InterruptedException, InitializationFailedException {
         // Note: It is important to register your ReadyListener before building
         File config;
         Scanner cfs;
@@ -138,7 +145,31 @@ static String botToken="",channelid="";
 
         // optionally block until JDA is ready
         jda.awaitReady();
-        chatChannel = jda.getGuildById(guildid).getTextChannelById(channelid);
+        //check for MESSAGE_CONTENT intent. this currently does not work. even if the bot has the intent it will not register as having it
+        /*
+        EnumSet<GatewayIntent> intents =  jda.getGatewayIntents();
+        for(GatewayIntent i : intents){
+            LOGGER.info(i.toString());
+        }
+        if(!intents.contains(GatewayIntent.MESSAGE_CONTENT)){
+            LOGGER.error("\n====================\nDiscord bot does not have MESSAGE_CONTENT intent\nthis intent is required for the operation of this mod\nto change this setting go to https://discord.com/developers/applications\n====================");
+            jda.shutdownNow();
+            discordConnected=false;
+            throw new InitializationFailedException();
+        }
+        */
+        Guild g =jda.getGuildById(guildid);
+        if(g == null){
+            LOGGER.error("Invalid Discord server information. Check the config file");
+            throw new InitializationFailedException();
+        }
+        chatChannel = g.getTextChannelById(channelid);
+        if(chatChannel == null){
+            LOGGER.error("Invalid Discord channel information. Check the config file");
+            throw new InitializationFailedException();
+        }
+
+        Message.suppressContentIntentWarning();//prevent a warning from being sent to std out about message intent
     }
 
     @Override
