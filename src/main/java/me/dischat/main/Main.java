@@ -4,16 +4,13 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
-import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
-import net.dv8tion.jda.api.hooks.ListenerAdapter;
+import net.dv8tion.jda.api.requests.GatewayIntent;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
-import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,12 +19,12 @@ import javax.security.auth.login.LoginException;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
+import java.util.EnumSet;
 import java.util.Scanner;
 
 import static net.minecraft.server.command.CommandManager.literal;
 
-public class Main extends ListenerAdapter implements ModInitializer {
+public class Main implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("dischat");
     @Override
     public void onInitialize(){
@@ -139,25 +136,24 @@ static String botToken="",channelid="";
         }
 
          jda = JDABuilder.createDefault(botToken)
+                 .enableIntents(GatewayIntent.MESSAGE_CONTENT)
                 .addEventListeners(new ReadyListener())
-                .addEventListeners(new Main())
+                .addEventListeners(new MessageReceived())
                 .build();
 
         // optionally block until JDA is ready
         jda.awaitReady();
+
         //check for MESSAGE_CONTENT intent. this currently does not work. even if the bot has the intent it will not register as having it
-        /*
+
         EnumSet<GatewayIntent> intents =  jda.getGatewayIntents();
-        for(GatewayIntent i : intents){
-            LOGGER.info(i.toString());
-        }
         if(!intents.contains(GatewayIntent.MESSAGE_CONTENT)){
             LOGGER.error("\n====================\nDiscord bot does not have MESSAGE_CONTENT intent\nthis intent is required for the operation of this mod\nto change this setting go to https://discord.com/developers/applications\n====================");
             jda.shutdownNow();
             discordConnected=false;
             throw new InitializationFailedException();
         }
-        */
+
         Guild g =jda.getGuildById(guildid);
         if(g == null){
             LOGGER.error("Invalid Discord server information. Check the config file");
@@ -172,44 +168,7 @@ static String botToken="",channelid="";
         Message.suppressContentIntentWarning();//prevent a warning from being sent to std out about message intent
     }
 
-    @Override
-    public void onMessageReceived(MessageReceivedEvent event) {
-        Message msg = event.getMessage();
-        TextChannel channel = event.getChannel().asTextChannel();
-        Guild guild = event.getGuild();
-        User author = msg.getAuthor();
-        String content = msg.getContentRaw();
-        //String contentSections[] = content.split(" ");
-        //System.out.println(author + " " + content);
-        if(!channel.getId().equals(channelid)){
-            return;
-        }
-        if(author.isBot()) {
-            return;
-        }
-        if(content.equals("/list")){
-            List<ServerPlayerEntity> players = pm.getPlayerList();
-            if(players.size()==0){
-                channel.sendMessage("there are no players online").queue();
-                return;
-            }
-            String playersOut="";
-            for(int i=0;i<players.size();i++){
-                playersOut+=players.get(i).getName().getString()+" \n";
-            }
-            channel.sendMessage(playersOut).queue();
-            return;
-        }
-        String name;
-        if(event.getMember().getNickname()==null){
-            name = author.getName();
-        }else{
-            name = event.getMember().getNickname();
-        }
 
-        Main.pm.broadcast(Text.of("§9Discord §r["+name+"] "+content), false);
-
-    }
 
     public static void shutDown(){
         jda.shutdownNow();
