@@ -94,7 +94,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
                     Vec3d cords = player.getPos();
-                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z).queue();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getServerWorld().getRegistryKey().getValue()).queue();
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
