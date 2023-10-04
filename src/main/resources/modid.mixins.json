@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "me.dischat.mixins",
+  "compatibilityLevel": "JAVA_16",
+  "mixins": [],
+  "client": [],
+  "server": ["Mixin_ReadChat","Mixin_ShutDown","Mixin_ReadPlayerChat"],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
