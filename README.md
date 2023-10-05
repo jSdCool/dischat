@@ -13,7 +13,7 @@ this mod uses the fabric loader
    * to obtain ID's on discord enable developermode
 5) restart your server and all should work
 
-note: no tutorial for creating a discord bot is given here
+note: no tutorial for creating a discord bot is given here  
 discord bots requires the MESSAGE_CONTENT and GUILD_MEMBERS intents
 
 # Commands
