@@ -10,6 +10,7 @@ import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.requests.GatewayIntent;
+import net.dv8tion.jda.api.utils.concurrent.Task;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
@@ -24,6 +25,7 @@ import org.slf4j.LoggerFactory;
 import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Scanner;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
@@ -91,14 +93,21 @@ public class Main implements ModInitializer {
                                             context.getSource().sendError(MutableText.of(new LiteralTextContent("error: that user is already authed")));
                                             return 0;
                                         }
-                                        Member member = discordServer.getMemberById(id);
-                                        if(member == null){
-                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("error: unable to find that user")));
-                                            return 0;
-                                        }
-                                        discordAdmins.ids.add(id);
-                                        saveAuths();
-                                        context.getSource().sendFeedback(()-> MutableText.of(new LiteralTextContent("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
+                                        Task<List<Member>> membersTask = discordServer.loadMembers();
+                                        membersTask.onSuccess((event) ->{
+                                            Member member = event.stream().filter(m -> m.getId().equals(id)).findFirst().orElse(null);
+
+                                            if(member == null){
+                                                context.getSource().sendError(MutableText.of(new LiteralTextContent("error: unable to find that user")));
+                                                return;
+                                            }
+                                            discordAdmins.ids.add(id);
+                                            saveAuths();
+                                            context.getSource().sendFeedback(()-> MutableText.of(new LiteralTextContent("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
+                                        });
+
+
+
                                     }else{
                                         context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to discord")));
                                         return 0;
