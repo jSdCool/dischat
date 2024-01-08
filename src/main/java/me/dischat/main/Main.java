@@ -16,7 +16,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
-import net.minecraft.text.LiteralTextContent;
+import net.minecraft.text.PlainTextContent.Literal;
 import net.minecraft.text.MutableText;
 import net.minecraft.text.Text;
 import org.slf4j.Logger;
@@ -90,7 +90,7 @@ public class Main implements ModInitializer {
                                     String id= getString(context,"userID");
                                     if(discordConnected) {
                                         if(discordAdmins.ids.contains(id)) {
-                                            context.getSource().sendError(MutableText.of(new LiteralTextContent("error: that user is already authed")));
+                                            context.getSource().sendError(MutableText.of(new Literal("error: that user is already authed")));
                                             return 0;
                                         }
                                         Task<List<Member>> membersTask = discordServer.loadMembers();
@@ -98,18 +98,18 @@ public class Main implements ModInitializer {
                                             Member member = event.stream().filter(m -> m.getId().equals(id)).findFirst().orElse(null);
 
                                             if(member == null){
-                                                context.getSource().sendError(MutableText.of(new LiteralTextContent("error: unable to find that user")));
+                                                context.getSource().sendError(MutableText.of(new Literal("error: unable to find that user")));
                                                 return;
                                             }
                                             discordAdmins.ids.add(id);
                                             saveAuths();
-                                            context.getSource().sendFeedback(()-> MutableText.of(new LiteralTextContent("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
+                                            context.getSource().sendFeedback(()-> MutableText.of(new Literal("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
                                         });
 
 
 
                                     }else{
-                                        context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to discord")));
+                                        context.getSource().sendError(MutableText.of(new Literal("error: not connected to discord")));
                                         return 0;
                                     }
 
@@ -124,7 +124,7 @@ public class Main implements ModInitializer {
                                         saveAuths();
                                         context.getSource().sendFeedback(() -> Text.of("Successfully removed "+id+" from authed discord users"),true);
                                     }else{
-                                        context.getSource().sendError(MutableText.of(new LiteralTextContent("no user with that ID was authed")));
+                                        context.getSource().sendError(MutableText.of(new Literal("no user with that ID was authed")));
                                         return 0;
                                     }
 
@@ -137,7 +137,7 @@ public class Main implements ModInitializer {
                                 jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.of(Activity.ActivityType.CUSTOM_STATUS,botStatus));
                                 return 1;
                             }else {
-                                context.getSource().sendError(MutableText.of(new LiteralTextContent("error: not connected to discord")));
+                                context.getSource().sendError(MutableText.of(new Literal("error: not connected to discord")));
                                 return 0;
                             }
 

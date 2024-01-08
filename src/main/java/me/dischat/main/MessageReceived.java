@@ -9,7 +9,7 @@ import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.minecraft.MinecraftVersion;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
-import net.minecraft.text.LiteralTextContent;
+import net.minecraft.text.PlainTextContent.Literal;
 import net.minecraft.text.MutableText;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
@@ -122,7 +122,7 @@ public class MessageReceived extends ListenerAdapter {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
                     if(finalReason.isEmpty())
                         finalReason="kicked by an operator from discord";
-                    player.networkHandler.disconnect(MutableText.of(new LiteralTextContent((finalReason))));
+                    player.networkHandler.disconnect(MutableText.of(new Literal((finalReason))));
                     channel.sendMessage("kicked "+contentSections[1]+": "+finalReason).queue();
                     System.out.println("kicked "+contentSections[1]+": "+finalReason);
                 }else{
@@ -164,7 +164,7 @@ public class MessageReceived extends ListenerAdapter {
                     }
                     player.changeGameMode(mode);
                     channel.sendMessage("gamemode updated").queue();
-                    player.sendMessage(MutableText.of(new LiteralTextContent("gamemode updated")),false);
+                    player.sendMessage(MutableText.of(new Literal("gamemode updated")),false);
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
@@ -186,7 +186,7 @@ public class MessageReceived extends ListenerAdapter {
         //get the user's display name on the server
         String name;
         if(event.getMember().getNickname()==null){
-            name = author.getName();
+            name = author.getEffectiveName();
         }else{
             name = event.getMember().getNickname();
         }
@@ -199,13 +199,13 @@ public class MessageReceived extends ListenerAdapter {
         }
 
         //format the message with all the colors and hover text and stuff
-        MutableText chatMessage=MutableText.of(new LiteralTextContent("")) ,discordText =MutableText.of(new LiteralTextContent("Discord "));
+        MutableText chatMessage=MutableText.of(new Literal("")) ,discordText =MutableText.of(new Literal("Discord "));
         discordText.setStyle(chatMessage.getStyle().withColor(5592575));
         chatMessage.append(discordText);
-        MutableText discordName = MutableText.of(new LiteralTextContent(("["+name+"] ")));
+        MutableText discordName = MutableText.of(new Literal(("["+name+"] ")));
         discordName.setStyle(discordName.getStyle().withHoverEvent(
                 new HoverEvent(HoverEvent.Action.SHOW_TEXT,MutableText.of(
-                        new LiteralTextContent(("Discord name: "+author.getName()+"\nid: "+author.getId()))))).withColor(roleColor));
+                        new Literal(("Discord name: "+author.getName()+"\nid: "+author.getId()))))).withColor(roleColor));
         chatMessage.append(discordName);
         chatMessage.append(content);
 
