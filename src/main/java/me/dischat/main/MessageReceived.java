@@ -1,5 +1,6 @@
 package me.dischat.main;
 
+import com.mojang.authlib.GameProfile;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.Role;
 import net.dv8tion.jda.api.entities.User;
@@ -7,6 +8,8 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.minecraft.MinecraftVersion;
+import net.minecraft.server.Whitelist;
+import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.HoverEvent;
 import net.minecraft.text.PlainTextContent.Literal;
@@ -15,6 +18,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
 import java.util.List;
+import java.util.Optional;
 
 public class MessageReceived extends ListenerAdapter {
     @SuppressWarnings("all")
@@ -175,10 +179,69 @@ public class MessageReceived extends ListenerAdapter {
             return;
         }
 
-        if(content.equals("/help")) {
-            channel.sendMessage("send messages in this channel to make them appear in Mincreaft\n===COMMANDS===\n/list    list online players\n/version    get the version of this mod and the game\n===MODERATOR COMMANDS===\n/tp <player> <x> <y> <z>    teleport a player to that position\n/pos <player>    get the position of a player\n/kickMC <player> [<reason>]    kick a player from the server\n/gamemode <player> <mode>    set the gamemode of a player").queue();
+        if(contentSections[0].equals("/whitelist")){
+            if(!Main.discordAdmins.ids.contains(author.getId())){
+                channel.sendMessage("you are not authorized to use this command").queue();
+                return;
+            }
+            if(contentSections.length<3) {
+                channel.sendMessage("missing parameters").queue();
+                return;
+            }
+
+            if(contentSections[1].equals("add")){
+                //attempt to get the profile of the inputed name
+                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                //check if the profile was found
+                if(profileOptional.isEmpty()){
+                    //if not then send the error to the user
+                    channel.sendMessage("That player does not exist").queue();
+                    return;
+                }
+                GameProfile gp = profileOptional.get();
+                Whitelist whitelist = Main.pm.getWhitelist();
+                WhitelistEntry whitelistEntry = new WhitelistEntry(gp);
+                //actualy add the player to the whitlist
+                whitelist.add(whitelistEntry);
+
+                Main.LOGGER.info("Added "+ gp.getName()+" to the Whitelist from discord");
+                channel.sendMessage("Added "+gp.getName()+" to the whitelist").queue();
+
+            } else if (contentSections[1].equals("remove")) {
+                //attempt to get the profile of the inputed name
+                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                //check if the profile was found
+                if(profileOptional.isEmpty()){
+                    //if not then send the error to the user
+                    channel.sendMessage("That player does not exist").queue();
+                    return;
+                }
+                GameProfile gp = profileOptional.get();
+                Whitelist whitelist = Main.pm.getWhitelist();
+                if(!whitelist.isAllowed(gp)){
+                    channel.sendMessage("That player is not currely whitelisted").queue();
+                    return;
+                }
+                WhitelistEntry whitelistEntry = new WhitelistEntry(gp);
+                //actualy remove the player to the whitlist
+                whitelist.remove(whitelistEntry);
+
+                Main.LOGGER.info("Removed "+ gp.getName()+" from the Whitelist from discord");
+                channel.sendMessage("Removed "+gp.getName()+" from the whitelist").queue();
+            }else {
+                if(contentSections[1].toLowerCase().equals("@everyone")){
+                    channel.sendMessage("@ everyone is not a valid option for this command").queue();
+                }else
+                channel.sendMessage("Unknown argument: "+contentSections[1]).queue();
+            }
             return;
         }
+
+        if(content.equals("/help")) {
+            channel.sendMessage("send messages in this channel to make them appear in Mincreaft\n===COMMANDS===\n/list    list online players\n/version    get the version of this mod and the game\n===MODERATOR COMMANDS===\n/tp <player> <x> <y> <z>    teleport a player to that position\n/pos <player>    get the position of a player\n/kickMC <player> [<reason>]    kick a player from the server\n/gamemode <player> <mode>    set the gamemode of a player\n/whitelist <add | remove> <player>     add or remove a player from the whitelist").queue();
+            return;
+        }
+
 
 
         //send message to game chat
