@@ -8,6 +8,8 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.minecraft.MinecraftVersion;
+import net.minecraft.scoreboard.ServerScoreboard;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.server.Whitelist;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -233,6 +235,35 @@ public class MessageReceived extends ListenerAdapter {
                     channel.sendMessage("@ everyone is not a valid option for this command").queue();
                 }else
                 channel.sendMessage("Unknown argument: "+contentSections[1]).queue();
+            }
+            return;
+        }
+
+        if(contentSections[0].equals("/team")){
+            ServerScoreboard scb = Main.ms.getScoreboard();
+            if(contentSections.length == 1){
+                channel.sendMessage("This command expreded at leased 1 argument but none were present").queue();
+                return;
+            }
+            if(contentSections[1].equals("list")){
+                if(contentSections.length==2) {
+                    String teams = String.join("\n", scb.getTeamNames());
+
+                    channel.sendMessage("The server has the folowing teams:\n"+teams).queue();
+                }else {
+                    for(int i=2;i<contentSections.length;i++){
+                        String lookForTeam = contentSections[i];
+                        Team team = scb.getTeam(lookForTeam);
+                        if(team == null){
+                            channel.sendMessage("Did not find a team named: "+lookForTeam).queue();
+                        }else{
+                            String teamMembers = String.join(", ",team.getPlayerList());
+                            channel.sendMessage("The team "+lookForTeam+" has the folowing members: ["+teamMembers+"]").queue();
+                        }
+                    }
+                }
+            }else{
+                channel.sendMessage("Unknown argument");
             }
             return;
         }
