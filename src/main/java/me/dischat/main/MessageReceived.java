@@ -272,7 +272,17 @@ public class MessageReceived extends ListenerAdapter {
         }
 
         if(content.equals("/help")) {
-            channel.sendMessage("send messages in this channel to make them appear in Mincreaft\n===COMMANDS===\n/list    list online players\n/version    get the version of this mod and the game\n===MODERATOR COMMANDS===\n/tp <player> <x> <y> <z>    teleport a player to that position\n/pos <player>    get the position of a player\n/kickMC <player> [<reason>]    kick a player from the server\n/gamemode <player> <mode>    set the gamemode of a player\n/whitelist <add | remove> <player>     add or remove a player from the whitelist").queue();
+            channel.sendMessage("send messages in this channel to make them appear in Mincreaft\n===COMMANDS===\n" +
+                    "/list    list online players\n" +
+                    "/team <list> [<team name>]    list teams on the server or list the players on a team\n"+
+                    "/version    get the version of this mod and the game\n" +
+                    "===MODERATOR COMMANDS===\n" +
+                    "/gamemode <player> <mode>    set the gamemode of a player\n" +
+                    "/kickMC <player> [<reason>]    kick a player from the server\n" +
+                    "/pos <player>    get the position of a player\n" +
+                    "/tp <player> <x> <y> <z>    teleport a player to that position\n" +
+                    "/whitelist <add | remove> <player>     add or remove a player from the whitelist"
+            ).queue();
             return;
         }
 

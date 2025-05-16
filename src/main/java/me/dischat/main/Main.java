@@ -156,7 +156,7 @@ public class Main implements ModInitializer {
     static PlayerManager pm;
     public static TextChannel chatChannel;
     static Guild discordServer;
-    public static final String modVersion ="1.2.0";
+    public static final String modVersion ="1.2.1";
 
     static AuthedUsers discordAdmins;
     static final String authFileName="config/admins.auth";
