@@ -3,9 +3,15 @@
   "minVersion": "0.8",
   "package": "me.dischat.mixins",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [],
+  "mixins": [
+    "Mixin_TraceQuery"
+  ],
   "client": [],
-  "server": ["Mixin_ReadChat","Mixin_ShutDown","Mixin_ReadPlayerChat"],
+  "server": [
+    "Mixin_ReadChat",
+    "Mixin_ReadPlayerChat",
+    "Mixin_ShutDown"
+  ],
   "injectors": {
     "defaultRequire": 1
   }
