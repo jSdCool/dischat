@@ -8,6 +8,7 @@ import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.minecraft.MinecraftVersion;
+import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.server.Whitelist;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -17,8 +18,10 @@ import net.minecraft.text.MutableText;
 import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public class MessageReceived extends ListenerAdapter {
     @SuppressWarnings("all")
@@ -76,7 +79,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNames().length >0 && hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
 
-                    player.teleport(player.getServerWorld(),x, y, z,player.getYaw(),player.getPitch());
+                    player.teleport(player.getServerWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
                     channel.sendMessage("teleported player").queue();
                 }else{
                     channel.sendMessage("player not found").queue();
@@ -267,7 +270,7 @@ public class MessageReceived extends ListenerAdapter {
         chatMessage.append(discordText);
         MutableText discordName = MutableText.of(new Literal(("["+name+"] ")));
         discordName.setStyle(discordName.getStyle().withHoverEvent(
-                new HoverEvent(HoverEvent.Action.SHOW_TEXT,MutableText.of(
+                new HoverEvent.ShowText(MutableText.of(
                         new Literal(("Discord name: "+author.getName()+"\nid: "+author.getId()))))).withColor(roleColor));
         chatMessage.append(discordName);
         chatMessage.append(content);

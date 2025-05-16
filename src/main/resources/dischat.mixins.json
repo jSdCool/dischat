@@ -3,9 +3,7 @@
   "minVersion": "0.8",
   "package": "me.dischat.mixins",
   "compatibilityLevel": "JAVA_21",
-  "mixins": [
-    "Mixin_TraceQuery"
-  ],
+  "mixins": [],
   "client": [],
   "server": [
     "Mixin_ReadChat",
