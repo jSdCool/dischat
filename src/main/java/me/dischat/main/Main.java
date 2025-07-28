@@ -156,7 +156,7 @@ public class Main implements ModInitializer {
     static PlayerManager pm;
     public static TextChannel chatChannel;
     static Guild discordServer;
-    public static final String modVersion ="1.2.1";
+    public static final String modVersion ="1.2.2";
 
     static AuthedUsers discordAdmins;
     static final String authFileName="config/admins.auth";
@@ -263,8 +263,13 @@ public class Main implements ModInitializer {
 
 
     public static void shutDown(){
-        jda.shutdownNow();
-        LOGGER.info("JDA shut down");
+        LOGGER.info("JDA awaiting shut down");
+        jda.shutdown();
+        try {
+            jda.awaitShutdown();
+        } catch (InterruptedException e) {
+            LOGGER.error("Error shutting down JDA",e);
+        }
     }
 
     public static void saveAuths() {

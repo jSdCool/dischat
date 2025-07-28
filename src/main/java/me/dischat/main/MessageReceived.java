@@ -58,7 +58,7 @@ public class MessageReceived extends ListenerAdapter {
             return;
         }
         if(content.equals("/version")){
-            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.CURRENT.getName()).queue();
+            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.CURRENT.name()).queue();
             return;
         }
 
@@ -81,7 +81,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNames().length >0 && hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
 
-                    player.teleport(player.getServerWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
+                    player.teleport(player.getWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
                     channel.sendMessage("teleported player").queue();
                 }else{
                     channel.sendMessage("player not found").queue();
@@ -103,7 +103,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
                     Vec3d cords = player.getPos();
-                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getServerWorld().getRegistryKey().getValue()).queue();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getWorld().getRegistryKey().getValue()).queue();
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
