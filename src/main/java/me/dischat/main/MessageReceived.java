@@ -11,6 +11,7 @@ import net.minecraft.MinecraftVersion;
 import net.minecraft.network.packet.s2c.play.PositionFlag;
 import net.minecraft.scoreboard.ServerScoreboard;
 import net.minecraft.scoreboard.Team;
+import net.minecraft.server.PlayerConfigEntry;
 import net.minecraft.server.Whitelist;
 import net.minecraft.server.WhitelistEntry;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -58,7 +59,7 @@ public class MessageReceived extends ListenerAdapter {
             return;
         }
         if(content.equals("/version")){
-            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.CURRENT.name()).queue();
+            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.create().name()).queue();
             return;
         }
 
@@ -81,7 +82,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNames().length >0 && hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
 
-                    player.teleport(player.getWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
+                    player.teleport(player.getEntityWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
                     channel.sendMessage("teleported player").queue();
                 }else{
                     channel.sendMessage("player not found").queue();
@@ -102,8 +103,8 @@ public class MessageReceived extends ListenerAdapter {
 
                 if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
                     ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
-                    Vec3d cords = player.getPos();
-                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getWorld().getRegistryKey().getValue()).queue();
+                    Vec3d cords = player.getEntityPos();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getEntityWorld().getRegistryKey().getValue()).queue();
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
@@ -196,32 +197,32 @@ public class MessageReceived extends ListenerAdapter {
 
             if(contentSections[1].equals("add")){
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                Optional<PlayerConfigEntry> profileOptional = Main.ms.getApiServices().nameToIdCache().findByName(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
                     channel.sendMessage("That player does not exist").queue();
                     return;
                 }
-                GameProfile gp = profileOptional.get();
+                PlayerConfigEntry gp = profileOptional.get();
                 Whitelist whitelist = Main.pm.getWhitelist();
                 WhitelistEntry whitelistEntry = new WhitelistEntry(gp);
                 //actualy add the player to the whitlist
                 whitelist.add(whitelistEntry);
 
-                Main.LOGGER.info("Added "+ gp.getName()+" to the Whitelist from discord");
-                channel.sendMessage("Added "+gp.getName()+" to the whitelist").queue();
+                Main.LOGGER.info("Added "+ gp.name()+" to the Whitelist from discord");
+                channel.sendMessage("Added "+gp.name()+" to the whitelist").queue();
 
             } else if (contentSections[1].equals("remove")) {
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                Optional<PlayerConfigEntry> profileOptional = Main.ms.getApiServices().nameToIdCache().findByName(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
                     channel.sendMessage("That player does not exist").queue();
                     return;
                 }
-                GameProfile gp = profileOptional.get();
+                PlayerConfigEntry gp = profileOptional.get();
                 Whitelist whitelist = Main.pm.getWhitelist();
                 if(!whitelist.isAllowed(gp)){
                     channel.sendMessage("That player is not currely whitelisted").queue();
@@ -231,8 +232,8 @@ public class MessageReceived extends ListenerAdapter {
                 //actualy remove the player to the whitlist
                 whitelist.remove(whitelistEntry);
 
-                Main.LOGGER.info("Removed "+ gp.getName()+" from the Whitelist from discord");
-                channel.sendMessage("Removed "+gp.getName()+" from the whitelist").queue();
+                Main.LOGGER.info("Removed "+ gp.name()+" from the Whitelist from discord");
+                channel.sendMessage("Removed "+gp.name()+" from the whitelist").queue();
             }else {
                 if(contentSections[1].toLowerCase().equals("@everyone")){
                     channel.sendMessage("@ everyone is not a valid option for this command").queue();
