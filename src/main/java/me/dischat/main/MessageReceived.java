@@ -13,6 +13,7 @@ import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.PlainTextContents.LiteralContents;
 import net.minecraft.server.ServerScoreboard;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.NameAndId;
 import net.minecraft.server.players.UserWhiteList;
 import net.minecraft.server.players.UserWhiteListEntry;
 import net.minecraft.world.entity.Relative;
@@ -102,7 +103,7 @@ public class MessageReceived extends ListenerAdapter {
                 if(Main.pm.getPlayerNamesArray().length>0&&hasPlayer(contentSections[1])) {
                     ServerPlayer player = Main.pm.getPlayerByName(contentSections[1]);
                     Vec3 cords = player.position();
-                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.level().dimension().location()).queue();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.level().dimension().identifier()).queue();
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
@@ -195,7 +196,7 @@ public class MessageReceived extends ListenerAdapter {
 
             if(contentSections[1].equals("add")){
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getProfileCache().get(contentSections[2]);
+                Optional<GameProfile> profileOptional = Main.ms.services().profileResolver().fetchByName(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
@@ -204,16 +205,16 @@ public class MessageReceived extends ListenerAdapter {
                 }
                 GameProfile gp = profileOptional.get();
                 UserWhiteList whitelist = Main.pm.getWhiteList();
-                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(gp);
+                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(new NameAndId(gp));
                 //actualy add the player to the whitlist
                 whitelist.add(whitelistEntry);
 
-                Main.LOGGER.info("Added "+ gp.getName()+" to the Whitelist from discord");
-                channel.sendMessage("Added "+gp.getName()+" to the whitelist").queue();
+                Main.LOGGER.info("Added "+ gp.name()+" to the Whitelist from discord");
+                channel.sendMessage("Added "+gp.name()+" to the whitelist").queue();
 
             } else if (contentSections[1].equals("remove")) {
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getProfileCache().get(contentSections[2]);
+                Optional<GameProfile> profileOptional = Main.ms.services().profileResolver().fetchByName(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
@@ -222,16 +223,16 @@ public class MessageReceived extends ListenerAdapter {
                 }
                 GameProfile gp = profileOptional.get();
                 UserWhiteList whitelist = Main.pm.getWhiteList();
-                if(!whitelist.isWhiteListed(gp)){
+                if(!whitelist.isWhiteListed(new NameAndId(gp))){
                     channel.sendMessage("That player is not currely whitelisted").queue();
                     return;
                 }
-                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(gp);
+                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(new NameAndId(gp));
                 //actualy remove the player to the whitlist
                 whitelist.remove(whitelistEntry);
 
-                Main.LOGGER.info("Removed "+ gp.getName()+" from the Whitelist from discord");
-                channel.sendMessage("Removed "+gp.getName()+" from the whitelist").queue();
+                Main.LOGGER.info("Removed "+ gp.name()+" from the Whitelist from discord");
+                channel.sendMessage("Removed "+gp.name()+" from the whitelist").queue();
             }else {
                 if(contentSections[1].toLowerCase().equals("@everyone")){
                     channel.sendMessage("@ everyone is not a valid option for this command").queue();

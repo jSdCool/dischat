@@ -14,6 +14,7 @@ import net.dv8tion.jda.api.utils.concurrent.Task;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.PlainTextContents.LiteralContents;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
+import static net.minecraft.commands.Commands.LEVEL_ADMINS;
 import static net.minecraft.commands.Commands.literal;
 
 public class Main implements ModInitializer {
@@ -56,7 +58,7 @@ public class Main implements ModInitializer {
                 pm.broadcastSystemMessage(Component.nullToEmpty("failed to connect to discoed"), false);
             });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, commandRegistryAccess,registrationEnvironment) -> dispatcher.register(literal("dischat").requires(source -> source.hasPermission(3))
+        CommandRegistrationCallback.EVENT.register((dispatcher, commandRegistryAccess,registrationEnvironment) -> dispatcher.register(literal("dischat").requires(Commands.hasPermission(LEVEL_ADMINS))
                 .then(literal("reload").executes(context -> {
                     context.getSource().sendSuccess(() -> Component.nullToEmpty("reloading dischat"),true);
                     LOGGER.info("reloading dischat");
