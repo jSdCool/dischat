@@ -14,11 +14,11 @@ import net.dv8tion.jda.api.utils.concurrent.Task;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.PlainTextContents.LiteralContents;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.PlayerManager;
-import net.minecraft.text.PlainTextContent.Literal;
-import net.minecraft.text.MutableText;
-import net.minecraft.text.Text;
+import net.minecraft.server.players.PlayerList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.Scanner;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
-import static net.minecraft.server.command.CommandManager.literal;
+import static net.minecraft.commands.Commands.literal;
 
 public class Main implements ModInitializer {
     public static final Logger LOGGER = LoggerFactory.getLogger("dischat");
@@ -51,14 +51,14 @@ public class Main implements ModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register((server) -> {
             ms=server;
-            pm = ms.getPlayerManager();
+            pm = ms.getPlayerList();
             if(!discordConnected)
-                pm.broadcast(Text.of("failed to connect to discoed"), false);
+                pm.broadcastSystemMessage(Component.nullToEmpty("failed to connect to discoed"), false);
             });
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, commandRegistryAccess,registrationEnvironment) -> dispatcher.register(literal("dischat").requires(source -> source.hasPermissionLevel(3))
+        CommandRegistrationCallback.EVENT.register((dispatcher, commandRegistryAccess,registrationEnvironment) -> dispatcher.register(literal("dischat").requires(source -> source.hasPermission(3))
                 .then(literal("reload").executes(context -> {
-                    context.getSource().sendFeedback(() -> Text.of("reloading dischat"),true);
+                    context.getSource().sendSuccess(() -> Component.nullToEmpty("reloading dischat"),true);
                     LOGGER.info("reloading dischat");
                     if(discordConnected)
                         shutDown();
@@ -67,30 +67,30 @@ public class Main implements ModInitializer {
                         Initialize_discord_bot();
                     } catch (LoginException e) {
                         LOGGER.error("failed to log into discord bot",e);
-                        context.getSource().sendError(Text.of("failed to log into discord bot \nreload failed!"));
+                        context.getSource().sendFailure(Component.nullToEmpty("failed to log into discord bot \nreload failed!"));
                         discordConnected=false;
                         return 0;
                     } catch (InterruptedException e) {
                         LOGGER.error("failed to initialise discord bot",e);
-                        context.getSource().sendError(Text.of("failed to initialise discord bot \nreload failed!"));
+                        context.getSource().sendFailure(Component.nullToEmpty("failed to initialise discord bot \nreload failed!"));
                         discordConnected=false;
                         return 0;
                     } catch (InitializationFailedException e) {
-                        context.getSource().sendError(Text.of("failed to initialise discord bot \nreload failed!"));
+                        context.getSource().sendFailure(Component.nullToEmpty("failed to initialise discord bot \nreload failed!"));
                         discordConnected=false;
                         return 0;
                     }
-                    context.getSource().sendFeedback(() -> Text.of("dischat reloaded!!"),true);
+                    context.getSource().sendSuccess(() -> Component.nullToEmpty("dischat reloaded!!"),true);
                     discordConnected=true;
                     return 1;
                 }))
                 .then(literal("auth")
-                        .then(net.minecraft.server.command.CommandManager.argument("userID", StringArgumentType.greedyString())
+                        .then(net.minecraft.commands.Commands.argument("userID", StringArgumentType.greedyString())
                                 .executes( (context) -> {
                                     String id= getString(context,"userID");
                                     if(discordConnected) {
                                         if(discordAdmins.ids.contains(id)) {
-                                            context.getSource().sendError(MutableText.of(new Literal("error: that user is already authed")));
+                                            context.getSource().sendFailure(MutableComponent.create(new LiteralContents("error: that user is already authed")));
                                             return 0;
                                         }
                                         Task<List<Member>> membersTask = discordServer.loadMembers();
@@ -98,46 +98,46 @@ public class Main implements ModInitializer {
                                             Member member = event.stream().filter(m -> m.getId().equals(id)).findFirst().orElse(null);
 
                                             if(member == null){
-                                                context.getSource().sendError(MutableText.of(new Literal("error: unable to find that user")));
+                                                context.getSource().sendFailure(MutableComponent.create(new LiteralContents("error: unable to find that user")));
                                                 return;
                                             }
                                             discordAdmins.ids.add(id);
                                             saveAuths();
-                                            context.getSource().sendFeedback(()-> MutableText.of(new Literal("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
+                                            context.getSource().sendSuccess(()-> MutableComponent.create(new LiteralContents("Added "+((member.getNickname()!=null)? member.getNickname()+"("+member.getUser().getName()+")":member.getUser().getName())+" to authorized Discord users")),true);
                                         });
 
 
 
                                     }else{
-                                        context.getSource().sendError(MutableText.of(new Literal("error: not connected to discord")));
+                                        context.getSource().sendFailure(MutableComponent.create(new LiteralContents("error: not connected to discord")));
                                         return 0;
                                     }
 
                                     return 1;
                                 })))
                 .then(literal("unAuth")
-                        .then(net.minecraft.server.command.CommandManager.argument("userID", StringArgumentType.greedyString())
+                        .then(net.minecraft.commands.Commands.argument("userID", StringArgumentType.greedyString())
                                 .executes( (context) -> {
                                     String id= getString(context,"userID");
                                     if(discordAdmins.ids.contains(id)){
                                         discordAdmins.ids.remove(id);
                                         saveAuths();
-                                        context.getSource().sendFeedback(() -> Text.of("Successfully removed "+id+" from authed discord users"),true);
+                                        context.getSource().sendSuccess(() -> Component.nullToEmpty("Successfully removed "+id+" from authed discord users"),true);
                                     }else{
-                                        context.getSource().sendError(MutableText.of(new Literal("no user with that ID was authed")));
+                                        context.getSource().sendFailure(MutableComponent.create(new LiteralContents("no user with that ID was authed")));
                                         return 0;
                                     }
 
                                     return 1;
                                 })))
-                .then(literal("status").then(net.minecraft.server.command.CommandManager.argument("status",StringArgumentType.greedyString())
+                .then(literal("status").then(net.minecraft.commands.Commands.argument("status",StringArgumentType.greedyString())
                         .executes((context -> {
                             if(discordConnected) {
                                 botStatus= getString(context,"status");
                                 jda.getPresence().setPresence(OnlineStatus.ONLINE, Activity.of(Activity.ActivityType.CUSTOM_STATUS,botStatus));
                                 return 1;
                             }else {
-                                context.getSource().sendError(MutableText.of(new Literal("error: not connected to discord")));
+                                context.getSource().sendFailure(MutableComponent.create(new LiteralContents("error: not connected to discord")));
                                 return 0;
                             }
 
@@ -153,7 +153,7 @@ public class Main implements ModInitializer {
     public static JDA jda;
     static String botToken="",channelid="";
     static MinecraftServer ms;
-    static PlayerManager pm;
+    static PlayerList pm;
     public static TextChannel chatChannel;
     static Guild discordServer;
     public static final String modVersion ="1.2.2";

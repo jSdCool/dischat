@@ -7,19 +7,18 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.minecraft.MinecraftVersion;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
-import net.minecraft.scoreboard.ServerScoreboard;
-import net.minecraft.scoreboard.Team;
-import net.minecraft.server.Whitelist;
-import net.minecraft.server.WhitelistEntry;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.text.HoverEvent;
-import net.minecraft.text.PlainTextContent.Literal;
-import net.minecraft.text.MutableText;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
-
+import net.minecraft.DetectedVersion;
+import net.minecraft.network.chat.HoverEvent;
+import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.contents.PlainTextContents.LiteralContents;
+import net.minecraft.server.ServerScoreboard;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.players.UserWhiteList;
+import net.minecraft.server.players.UserWhiteListEntry;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.scores.PlayerTeam;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
@@ -45,20 +44,20 @@ public class MessageReceived extends ListenerAdapter {
 
         //discord commands
         if(content.equals("/list")){
-            List<ServerPlayerEntity> players = Main.pm.getPlayerList();
+            List<ServerPlayer> players = Main.pm.getPlayers();
             if(players.isEmpty()){
                 channel.sendMessage("there are no players online").queue();
                 return;
             }
             StringBuilder playersOut= new StringBuilder();
-            for (ServerPlayerEntity player : players) {
+            for (ServerPlayer player : players) {
                 playersOut.append(player.getName().getString()).append(" \n");
             }
             channel.sendMessage(playersOut.toString()).queue();
             return;
         }
         if(content.equals("/version")){
-            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ MinecraftVersion.CURRENT.name()).queue();
+            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ DetectedVersion.BUILT_IN.name()).queue();
             return;
         }
 
@@ -78,10 +77,10 @@ public class MessageReceived extends ListenerAdapter {
                     return;
                 }
                 //teleport the player
-                if(Main.pm.getPlayerNames().length >0 && hasPlayer(contentSections[1])) {
-                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+                if(Main.pm.getPlayerNamesArray().length >0 && hasPlayer(contentSections[1])) {
+                    ServerPlayer player = Main.pm.getPlayerByName(contentSections[1]);
 
-                    player.teleport(player.getWorld(),x, y, z, (Set<PositionFlag>)EnumSet.noneOf(PositionFlag.class),player.getYaw(),player.getPitch(),false);
+                    player.teleportTo(player.level(),x, y, z, (Set<Relative>)EnumSet.noneOf(Relative.class),player.getYRot(),player.getXRot(),false);
                     channel.sendMessage("teleported player").queue();
                 }else{
                     channel.sendMessage("player not found").queue();
@@ -100,10 +99,10 @@ public class MessageReceived extends ListenerAdapter {
                     return;
                 }
 
-                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
-                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
-                    Vec3d cords = player.getPos();
-                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.getWorld().getRegistryKey().getValue()).queue();
+                if(Main.pm.getPlayerNamesArray().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayer player = Main.pm.getPlayerByName(contentSections[1]);
+                    Vec3 cords = player.position();
+                    channel.sendMessage(contentSections[1]+": "+cords.x+" "+cords.y+" "+cords.z+" "+player.level().dimension().location()).queue();
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
@@ -127,11 +126,11 @@ public class MessageReceived extends ListenerAdapter {
 
                 String finalReason = reason.toString();
 
-                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
-                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
+                if(Main.pm.getPlayerNamesArray().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayer player = Main.pm.getPlayerByName(contentSections[1]);
                     if(finalReason.isEmpty())
                         finalReason="kicked by an operator from discord";
-                    player.networkHandler.disconnect(MutableText.of(new Literal((finalReason))));
+                    player.connection.disconnect(MutableComponent.create(new LiteralContents((finalReason))));
                     channel.sendMessage("kicked "+contentSections[1]+": "+finalReason).queue();
                     System.out.println("kicked "+contentSections[1]+": "+finalReason);
                 }else{
@@ -151,29 +150,29 @@ public class MessageReceived extends ListenerAdapter {
                     return;
                 }
 
-                if(Main.pm.getPlayerNames().length>0&&hasPlayer(contentSections[1])) {
-                    ServerPlayerEntity player = Main.pm.getPlayer(contentSections[1]);
-                    GameMode mode=GameMode.DEFAULT;
+                if(Main.pm.getPlayerNamesArray().length>0&&hasPlayer(contentSections[1])) {
+                    ServerPlayer player = Main.pm.getPlayerByName(contentSections[1]);
+                    GameType mode=GameType.DEFAULT_MODE;
                     switch(contentSections[2]){
                         case "creative":
-                            mode=GameMode.CREATIVE;
+                            mode=GameType.CREATIVE;
                             break;
                         case "survival":
-                            mode=GameMode.SURVIVAL;
+                            mode=GameType.SURVIVAL;
                             break;
                         case "adventure":
-                            mode=GameMode.ADVENTURE;
+                            mode=GameType.ADVENTURE;
                             break;
                         case "spectator":
-                            mode=GameMode.SPECTATOR;
+                            mode=GameType.SPECTATOR;
                             break;
                         default:
                             channel.sendMessage("invalid gamemode").queue();
 
                     }
-                    player.changeGameMode(mode);
+                    player.setGameMode(mode);
                     channel.sendMessage("gamemode updated").queue();
-                    player.sendMessage(MutableText.of(new Literal("gamemode updated")),false);
+                    player.displayClientMessage(MutableComponent.create(new LiteralContents("gamemode updated")),false);
                 }else{
                     channel.sendMessage("player not found").queue();
                 }
@@ -196,7 +195,7 @@ public class MessageReceived extends ListenerAdapter {
 
             if(contentSections[1].equals("add")){
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                Optional<GameProfile> profileOptional = Main.ms.getProfileCache().get(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
@@ -204,8 +203,8 @@ public class MessageReceived extends ListenerAdapter {
                     return;
                 }
                 GameProfile gp = profileOptional.get();
-                Whitelist whitelist = Main.pm.getWhitelist();
-                WhitelistEntry whitelistEntry = new WhitelistEntry(gp);
+                UserWhiteList whitelist = Main.pm.getWhiteList();
+                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(gp);
                 //actualy add the player to the whitlist
                 whitelist.add(whitelistEntry);
 
@@ -214,7 +213,7 @@ public class MessageReceived extends ListenerAdapter {
 
             } else if (contentSections[1].equals("remove")) {
                 //attempt to get the profile of the inputed name
-                Optional<GameProfile> profileOptional = Main.ms.getUserCache().findByName(contentSections[2]);
+                Optional<GameProfile> profileOptional = Main.ms.getProfileCache().get(contentSections[2]);
                 //check if the profile was found
                 if(profileOptional.isEmpty()){
                     //if not then send the error to the user
@@ -222,12 +221,12 @@ public class MessageReceived extends ListenerAdapter {
                     return;
                 }
                 GameProfile gp = profileOptional.get();
-                Whitelist whitelist = Main.pm.getWhitelist();
-                if(!whitelist.isAllowed(gp)){
+                UserWhiteList whitelist = Main.pm.getWhiteList();
+                if(!whitelist.isWhiteListed(gp)){
                     channel.sendMessage("That player is not currely whitelisted").queue();
                     return;
                 }
-                WhitelistEntry whitelistEntry = new WhitelistEntry(gp);
+                UserWhiteListEntry whitelistEntry = new UserWhiteListEntry(gp);
                 //actualy remove the player to the whitlist
                 whitelist.remove(whitelistEntry);
 
@@ -256,11 +255,11 @@ public class MessageReceived extends ListenerAdapter {
                 }else {
                     for(int i=2;i<contentSections.length;i++){
                         String lookForTeam = contentSections[i];
-                        Team team = scb.getTeam(lookForTeam);
+                        PlayerTeam team = scb.getPlayerTeam(lookForTeam);
                         if(team == null){
                             channel.sendMessage("Did not find a team named: "+lookForTeam).queue();
                         }else{
-                            String teamMembers = String.join(", ",team.getPlayerList());
+                            String teamMembers = String.join(", ",team.getPlayers());
                             channel.sendMessage("The team "+lookForTeam+" has the folowing members: ["+teamMembers+"]").queue();
                         }
                     }
@@ -306,24 +305,24 @@ public class MessageReceived extends ListenerAdapter {
         }
 
         //format the message with all the colors and hover text and stuff
-        MutableText chatMessage=MutableText.of(new Literal("")) ,discordText =MutableText.of(new Literal("Discord "));
+        MutableComponent chatMessage=MutableComponent.create(new LiteralContents("")) ,discordText =MutableComponent.create(new LiteralContents("Discord "));
         discordText.setStyle(chatMessage.getStyle().withColor(5592575));
         chatMessage.append(discordText);
-        MutableText discordName = MutableText.of(new Literal(("["+name+"] ")));
+        MutableComponent discordName = MutableComponent.create(new LiteralContents(("["+name+"] ")));
         discordName.setStyle(discordName.getStyle().withHoverEvent(
-                new HoverEvent.ShowText(MutableText.of(
-                        new Literal(("Discord name: "+author.getName()+"\nid: "+author.getId()))))).withColor(roleColor));
+                new HoverEvent.ShowText(MutableComponent.create(
+                        new LiteralContents(("Discord name: "+author.getName()+"\nid: "+author.getId()))))).withColor(roleColor));
         chatMessage.append(discordName);
         chatMessage.append(content);
 
         //send the message
-        Main.pm.broadcast(chatMessage, false);
+        Main.pm.broadcastSystemMessage(chatMessage, false);
 
     }
 
     boolean hasPlayer(String name){
-        List<ServerPlayerEntity> players = Main.pm.getPlayerList();
-        for (ServerPlayerEntity player : players) {
+        List<ServerPlayer> players = Main.pm.getPlayers();
+        for (ServerPlayer player : players) {
             if (player.getName().getString().equals(name)) {
                 return true;
             }

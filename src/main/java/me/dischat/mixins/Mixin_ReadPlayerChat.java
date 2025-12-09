@@ -1,9 +1,9 @@
 package me.dischat.mixins;
 
-import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import org.spongepowered.asm.mixin.Mixin;
 
-@Mixin(ServerPlayNetworkHandler.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 public class Mixin_ReadPlayerChat {
     //@Shadow public ServerPlayerEntity player;
 //
