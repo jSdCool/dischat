@@ -173,7 +173,8 @@ public class MessageReceived extends ListenerAdapter {
                     }
                     player.setGameMode(mode);
                     channel.sendMessage("gamemode updated").queue();
-                    player.displayClientMessage(MutableComponent.create(new LiteralContents("gamemode updated")),false);
+                    player.sendSystemMessage(MutableComponent.create(new LiteralContents("gamemode updated")));
+//                    player.displayClientMessage(MutableComponent.create(new LiteralContents("gamemode updated")),false);
                 }else{
                     channel.sendMessage("player not found").queue();
                 }

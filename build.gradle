@@ -4,10 +4,10 @@ plugins {
 	id 'com.matthewprenger.cursegradle' version '1.4.0'
 	id 'com.gradleup.shadow' version '9.3.0'
 }
-
-apply plugin: 'maven-publish'
-apply plugin: 'com.gradleup.shadow'
-apply plugin: 'fabric-loom'
+//
+//apply plugin: 'maven-publish'
+//apply plugin: 'com.gradleup.shadow'
+//apply plugin: 'fabric-loom'
 
 base {
     archivesName = project.archives_base_name
@@ -26,7 +26,10 @@ repositories {
 	// for more information about repositories.
 }
 
-configurations { shade }
+configurations {
+	shade
+	implementation.extendsFrom shade
+}
 dependencies {
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
@@ -72,25 +75,38 @@ java {
 
 shadowJar {
 	configurations = [project.configurations.shade]
+	archiveClassifier.set('shaded-dev')
 	destinationDirectory.set(layout.buildDirectory.dir('devlibs'))
+//	relocate("net.dv8tion", "me.dischat.external.net.dv8tion")
 }
 
 jar {
-    inputs.property "archivesName", project.base.archivesName
+	//after 26.1 including a shadow jar is way more annoying but this seems to work
+	dependsOn shadowJar
 
-    from("LICENSE") {
-        rename { "${it}_${inputs.properties.archivesName}"}
-    }
-	dependsOn tasks.shadowJar
-//	inputs.set(tasks.shadowJar.archiveFile)
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE//necessary
+
+	from(zipTree(shadowJar.archiveFile)) {
+		// This prevents double-including project classes if they are already in the shadowJar
+		exclude "fabric.mod.json"
+	}
+
+	inputs.property "archivesName", project.base.archivesName
+
+	from("LICENSE") {
+		rename { "${it}_${inputs.properties.archivesName}"}
+	}
+
 }
+
+assemble.dependsOn shadowJar
 
 // configure the maven publication
 publishing {
 	publications {
 //		mavenJava(MavenPublication) {
 //			// add all the jars that should be included when publishing to maven
-//			artifact(remapJar) {
+//			artifact(jar) {
 //				builtBy remapJar
 //			}
 //			artifact(sourcesJar) {
