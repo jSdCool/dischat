@@ -7,7 +7,6 @@ import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
-import net.minecraft.DetectedVersion;
 import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.contents.PlainTextContents.LiteralContents;
@@ -58,7 +57,7 @@ public class MessageReceived extends ListenerAdapter {
             return;
         }
         if(content.equals("/version")){
-            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ DetectedVersion.BUILT_IN.name()).queue();
+            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ Main.ms.getServerVersion()).queue();
             return;
         }
 
