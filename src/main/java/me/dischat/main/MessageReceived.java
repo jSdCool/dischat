@@ -57,7 +57,7 @@ public class MessageReceived extends ListenerAdapter {
             return;
         }
         if(content.equals("/version")){
-            channel.sendMessage("mod version: "+Main.modVersion+"\ngame version: "+ Main.ms.getServerVersion()).queue();
+            channel.sendMessage("mod version: "+Main.MOD_VERSION +"\ngame version: "+ Main.ms.getServerVersion()).queue();
             return;
         }
 

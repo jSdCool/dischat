@@ -27,6 +27,7 @@ import javax.security.auth.login.LoginException;
 import java.io.*;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Properties;
 import java.util.Scanner;
 
 import static com.mojang.brigadier.arguments.StringArgumentType.getString;
@@ -158,7 +159,7 @@ public class Main implements ModInitializer {
     static PlayerList pm;
     public static TextChannel chatChannel;
     static Guild discordServer;
-    public static final String modVersion ="1.2.5";
+    public static final String MOD_VERSION = loadModVersion();
 
     static AuthedUsers discordAdmins;
     static final String authFileName="config/admins.auth";
@@ -284,6 +285,20 @@ public class Main implements ModInitializer {
         }catch(IOException i) {
             LOGGER.error("Exception while saving auth list",i);
         }
+    }
+
+    static String loadModVersion(){
+        Properties props = new Properties();
+
+        try (InputStream in = Main.class
+                .getClassLoader()
+                .getResourceAsStream("version.properties")) {
+            props.load(in);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return props.getProperty("app.version");
     }
     
 }

@@ -50,6 +50,11 @@ processResources {
 	filesMatching("fabric.mod.json") {
 		expand "version": project.version
 	}
+	//copy the mod version so it can be fetched in game
+	filesMatching('version.properties') {
+		expand(version: mod_version)
+	}
+
 }
 
 tasks.withType(JavaCompile).configureEach {
